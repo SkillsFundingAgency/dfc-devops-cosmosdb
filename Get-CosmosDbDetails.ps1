@@ -37,7 +37,17 @@ if (!$ExistingDatabase) {
 }
 
 Write-Verbose "Checking for $CosmosDbCollection"
-$ExistingCollection = Get-CosmosDbCollection -Context $CosmosDbContext -Database $CosmosDbDatabase -Id $CosmosDbCollection -ErrorAction SilentlyContinue
+try {
+    $ExistingCollection = Get-CosmosDbCollection -Context $CosmosDbContext -Database $CosmosDbDatabase -Id $CosmosDbCollection -ErrorAction SilentlyContinue
+}
+catch [System.Net.WebException],[Microsoft.PowerShell.Commands.HttpResponseException] {
+    if ($_.Exception.Response.StatusCode -eq 404) {
+        # collection doesnt exist (should silently continue)
+    }
+    else {
+        throw $_
+    }
+}
 
 if (!$ExistingCollection) {
     Write-Output "Missing Collection: $CosmosDbCollection"
